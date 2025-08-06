@@ -1,16 +1,38 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import SurveyCard from "../components/SurveyCard";
-import { surveyStore } from "../store/surveyStore";
-import type { Survey } from "../types/survey";
+import { apiService } from "../services/api";
+import { commonStyles } from "../styles/common";
+import type { Survey, FrontendSurvey } from "../types/survey";
 
 export default function HomePage() {
-  const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [surveys, setSurveys] = useState<FrontendSurvey[]>([]);
 
   useEffect(() => {
-    const loadSurveys = () => {
-      const allSurveys = surveyStore.getAllSurveys();
-      setSurveys(allSurveys);
+    const loadSurveys = async () => {
+      try {
+        const backendSurveys = await apiService.getSurveys();
+
+        // 백엔드 응답을 프론트엔드 형식으로 변환
+        const frontendSurveys: FrontendSurvey[] = backendSurveys.map(
+          (survey: Survey) => ({
+            id: survey.surveyId.toString(),
+            title: survey.title,
+            description: survey.subTitle,
+            questions:
+              survey.questions?.map((q) => ({
+                question: q.text,
+                options: q.choices?.map((c) => c.text) || [],
+              })) || [],
+            responses: survey.responses || 0,
+          })
+        );
+
+        setSurveys(frontendSurveys);
+      } catch (error) {
+        console.error("설문 목록 로드 실패:", error);
+        setSurveys([]);
+      }
     };
 
     loadSurveys();
@@ -21,52 +43,17 @@ export default function HomePage() {
       <div style={{ padding: "4rem 2rem 0 2rem" }}></div>
 
       <div
-        style={{
-          padding: "2rem",
-          display: "flex",
-          justifyContent: "center",
-        }}
+        style={{ padding: "2rem", display: "flex", justifyContent: "center" }}
       >
-        <div
-          style={{
-            textAlign: "center",
-            maxWidth: "600px",
-            width: "100%",
-          }}
-        >
-          <h1
-            style={{
-              fontSize: "2rem",
-              margin: "0 0 0.5rem 0",
-              fontWeight: "bold",
-              color: "#000000",
-            }}
-          >
-            서비스 명
-          </h1>
-          <p
-            style={{
-              fontSize: "1rem",
-              color: "#565656",
-              margin: "0 0 2rem 0",
-            }}
-          >
+        <div style={{ textAlign: "center", maxWidth: "600px", width: "100%" }}>
+          <h1 style={commonStyles.title}>서비스 명</h1>
+          <p style={{ ...commonStyles.text.regular, margin: "0 0 2rem 0" }}>
             행동 데이터 기반 설문조사
           </p>
           <div>
             <Link to="/create" style={{ textDecoration: "none" }}>
               <button
-                style={{
-                  background: "#000",
-                  color: "#fff",
-                  border: "none",
-                  padding: "0.75rem 1.5rem",
-                  borderRadius: "6px",
-                  marginRight: "1rem",
-                  cursor: "pointer",
-                  fontSize: "1rem",
-                  transition: "background-color 0.2s ease",
-                }}
+                style={commonStyles.button.primary}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = "#333";
                 }}
@@ -77,18 +64,12 @@ export default function HomePage() {
                 새 설문 만들기
               </button>
             </Link>
-            <Link to="/statistics" style={{ textDecoration: "none" }}>
+            <Link
+              to="/statistics"
+              style={{ textDecoration: "none", marginLeft: "1rem" }}
+            >
               <button
-                style={{
-                  background: "#000",
-                  color: "#fff",
-                  border: "none",
-                  padding: "0.75rem 1.5rem",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "1rem",
-                  transition: "background-color 0.2s ease",
-                }}
+                style={commonStyles.button.primary}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = "#333";
                 }}
@@ -106,10 +87,9 @@ export default function HomePage() {
       <div style={{ padding: "0 2rem 2rem 2rem" }}>
         <h2
           style={{
+            ...commonStyles.subtitle,
             fontSize: "1.5rem",
             margin: "0 0 1rem 0",
-            fontWeight: "bold",
-            color: "#000000",
           }}
         >
           참여 가능한 설문
@@ -128,7 +108,8 @@ export default function HomePage() {
               id={survey.id}
               title={survey.title}
               subtitle={survey.description}
-              deadline={`${survey.questions.length}개 항목 · ${survey.responses}명 참여`}
+              itemCount={survey.questions.length}
+              participantCount={survey.responses || 0}
             />
           ))}
         </div>

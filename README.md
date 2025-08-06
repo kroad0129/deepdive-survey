@@ -1,69 +1,41 @@
-# React + TypeScript + Vite
+# 설문조사 애플리케이션
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript + Vite로 구축된 설문조사 웹 애플리케이션입니다.
 
-Currently, two official plugins are available:
+## 기능
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 설문 생성 및 관리
+- 설문 참여
+- 설문 결과 통계
+- 행동 데이터 추적 (호버, 선택 변경, 정지 시간, 체류 시간, 클릭)
+- 로컬 스토리지를 활용한 데이터 저장
 
-## Expanding the ESLint configuration
+## 개발 환경 설정
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+```bash
+# 의존성 설치
+npm install
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# 개발 서버 실행
+npm run dev
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+# 빌드
+npm run build
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# 린트 검사
+npm run lint
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 프로젝트 구조
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+src/
+├── components/     # 재사용 가능한 컴포넌트
+├── pages/         # 페이지 컴포넌트
+├── store/         # 상태 관리
+├── styles/        # 공통 스타일
+├── types/         # TypeScript 타입 정의
+├── services/      # API 서비스 및 로깅
+├── hooks/         # 커스텀 훅
+└── assets/        # 정적 자산
 ```

@@ -6,7 +6,7 @@ import SurveyPage from "./pages/SurveyPage";
 import SurveyCompletePage from "./pages/SurveyCompletePage";
 import StatisticsPage from "./pages/StatisticsPage";
 import StatisticsDetailPage from "./pages/StatisticsDetailPage";
-import DebugPage from "./pages/DebugPage";
+import DebugEventLogPage from "./pages/DebugEventLogPage";
 
 function App() {
   return (
@@ -18,7 +18,7 @@ function App() {
       <Route path="/survey/:id/complete" element={<SurveyCompletePage />} />
       <Route path="/statistics" element={<StatisticsPage />} />
       <Route path="/statistics/:id" element={<StatisticsDetailPage />} />
-      <Route path="/debug" element={<DebugPage />} />
+      <Route path="/debug-event-log" element={<DebugEventLogPage />} />
     </Routes>
   );
 }

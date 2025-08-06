@@ -1,32 +1,31 @@
 import { Link } from "react-router-dom";
+import { commonStyles } from "../styles/common";
 
 interface SurveyCardProps {
   id: string;
   title: string;
   subtitle: string;
-  etc: string;
+  itemCount: number;
+  participantCount: number;
 }
 
 export default function SurveyCard({
   id,
   title,
   subtitle,
-  etc,
+  itemCount,
+  participantCount,
 }: SurveyCardProps) {
   return (
     <div
       style={{
-        background: "#ffffff",
-        padding: "1.5rem",
-        borderRadius: "8px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+        ...commonStyles.card,
         display: "flex",
         flexDirection: "column",
         height: "200px",
       }}
     >
       <div>
-        {/* 제목 */}
         <h3
           style={{
             fontSize: "1.2rem",
@@ -37,15 +36,7 @@ export default function SurveyCard({
         >
           {title}
         </h3>
-        <p
-          style={{
-            fontSize: "0.9rem",
-            color: "#565656",
-            margin: 0,
-          }}
-        >
-          {subtitle}
-        </p>
+        <p style={commonStyles.text.small}>{subtitle}</p>
       </div>
 
       <div style={{ marginTop: "auto" }}>
@@ -56,22 +47,17 @@ export default function SurveyCard({
             margin: "0 0 1rem 0",
           }}
         >
-          {etc}
+          {itemCount}개 항목 · {participantCount}명 참여
         </p>
 
-        <Link to={`/survey/${id}`} style={{ textDecoration: "none" }}>
+        <Link to={`/survey/${id}`}>
           <button
             style={{
-              background: "#000",
-              color: "#fff",
-              border: "none",
+              ...commonStyles.button.primary,
               padding: "0.75rem 1rem",
-              borderRadius: "6px",
-              cursor: "pointer",
               fontSize: "0.9rem",
               fontWeight: "500",
               width: "100%",
-              transition: "background-color 0.2s ease",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = "#303030";

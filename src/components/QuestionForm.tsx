@@ -1,4 +1,5 @@
 import type { ChangeEvent } from "react";
+import { commonStyles } from "../styles/common";
 
 interface Props {
   index: number;
@@ -19,15 +20,7 @@ export default function QuestionForm({
   onChange,
 }: Props) {
   return (
-    <div
-      style={{
-        background: "#fff",
-        padding: "1.5rem",
-        borderRadius: "8px",
-        marginBottom: "1.5rem",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-      }}
-    >
+    <div style={{ ...commonStyles.card, marginBottom: "1.5rem" }}>
       <h3
         style={{
           fontSize: "1.2rem",
@@ -44,7 +37,7 @@ export default function QuestionForm({
           style={{
             display: "block",
             marginBottom: "0.5rem",
-            fontSize: "0.9rem",
+            ...commonStyles.text.small,
             color: "#000000",
           }}
         >
@@ -61,6 +54,7 @@ export default function QuestionForm({
             border: "1px solid #ddd",
             borderRadius: "4px",
             fontSize: "1rem",
+            boxSizing: "border-box",
           }}
         />
       </div>
@@ -70,7 +64,7 @@ export default function QuestionForm({
           style={{
             display: "block",
             marginBottom: "0.5rem",
-            fontSize: "0.9rem",
+            ...commonStyles.text.small,
             color: "#000000",
           }}
         >
@@ -98,6 +92,7 @@ export default function QuestionForm({
                   border: "1px solid #ddd",
                   borderRadius: "4px",
                   fontSize: "0.9rem",
+                  boxSizing: "border-box",
                 }}
               />
             </div>

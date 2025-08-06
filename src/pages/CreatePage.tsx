@@ -1,15 +1,20 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import type { Survey, Question } from "../types/survey";
 import QuestionForm from "../components/QuestionForm";
-import { surveyStore } from "../store/surveyStore";
+import { apiService } from "../services/api";
+
+// 프론트엔드용 질문 타입 정의
+interface CreateQuestion {
+  question: string;
+  options: string[];
+}
 
 export default function CreatePage() {
   const navigate = useNavigate();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [questions, setQuestions] = useState<Question[]>([
+  const [questions, setQuestions] = useState<CreateQuestion[]>([
     { question: "", options: ["", "", "", "", ""] },
   ]);
 
@@ -42,16 +47,77 @@ export default function CreatePage() {
     );
   };
 
-  const handleSubmit = () => {
-    const newSurvey = surveyStore.createSurvey({
-      title,
-      description,
-      questions,
-    });
-    console.log("설문 저장됨:", newSurvey);
+  // 유효성 검사 함수
+  const validateForm = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
 
-    // 저장 후 완료 페이지로 이동
-    navigate("/create/complete");
+    // 설문 제목 검사
+    if (!title.trim()) {
+      errors.push("설문 제목을 입력해주세요.");
+    }
+
+    // 설문 부제목 검사
+    if (!description.trim()) {
+      errors.push("설문 부제목을 입력해주세요.");
+    }
+
+    // 질문들 검사
+    questions.forEach((question, qIndex) => {
+      // 질문 텍스트 검사
+      if (!question.question.trim()) {
+        errors.push(`질문 ${qIndex + 1}의 내용을 입력해주세요.`);
+      }
+
+      // 선택지 검사 (5개 모두 입력되어야 함)
+      const validOptions = question.options.filter(
+        (option: string) => option.trim() !== ""
+      );
+      if (validOptions.length < 5) {
+        errors.push(`질문 ${qIndex + 1}의 선택지는 5개 모두 입력해주세요.`);
+      }
+    });
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
+  };
+
+  const handleSubmit = async () => {
+    // 유효성 검사 수행
+    const validation = validateForm();
+
+    if (!validation.isValid) {
+      alert(`다음 항목을 확인해주세요:\n\n${validation.errors.join("\n")}`);
+      return;
+    }
+
+    try {
+      // 백엔드 API로 설문 생성
+      const surveyData = {
+        title: title.trim(),
+        subTitle: description.trim(),
+        questions: questions.map((q, qIndex) => ({
+          text: q.question.trim(),
+          sequence: qIndex,
+          options: q.options
+            .filter((option: string) => option.trim() !== "") // 빈 선택지 제거
+            .map((option: string, oIndex: number) => ({
+              text: option.trim(),
+              sequence: oIndex,
+            })),
+        })),
+      };
+
+      const apiResponse = await apiService.createSurvey(surveyData);
+      console.log("백엔드 API 응답:", apiResponse);
+
+      // 저장 후 완료 페이지로 이동
+      navigate("/create/complete");
+    } catch (error) {
+      console.error("설문 생성 실패:", error);
+      alert("설문 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
+    }
   };
 
   return (
@@ -82,6 +148,7 @@ export default function CreatePage() {
           borderRadius: "8px",
           marginBottom: "1.5rem",
           boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          boxSizing: "border-box",
         }}
       >
         <h3
@@ -116,6 +183,7 @@ export default function CreatePage() {
               border: "1px solid #ddd",
               borderRadius: "4px",
               fontSize: "1rem",
+              boxSizing: "border-box",
             }}
           />
         </div>
@@ -141,6 +209,7 @@ export default function CreatePage() {
               border: "1px solid #ddd",
               borderRadius: "4px",
               fontSize: "1rem",
+              boxSizing: "border-box",
             }}
           />
         </div>

@@ -1,15 +1,36 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { surveyStore } from "../store/surveyStore";
-import type { Survey } from "../types/survey";
+import { apiService } from "../services/api";
+import type { Survey, FrontendSurvey } from "../types/survey";
 
 export default function StatisticsPage() {
-  const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [surveys, setSurveys] = useState<FrontendSurvey[]>([]);
 
   useEffect(() => {
-    const loadSurveys = () => {
-      const allSurveys = surveyStore.getAllSurveys();
-      setSurveys(allSurveys);
+    const loadSurveys = async () => {
+      try {
+        const backendSurveys = await apiService.getSurveys();
+
+        // 백엔드 응답을 프론트엔드 형식으로 변환
+        const frontendSurveys: FrontendSurvey[] = backendSurveys.map(
+          (survey: Survey) => ({
+            id: survey.surveyId.toString(),
+            title: survey.title,
+            description: survey.subTitle,
+            questions:
+              survey.questions?.map((q: any) => ({
+                question: q.text,
+                options: q.choices?.map((c: any) => c.text) || [],
+              })) || [],
+            responses: survey.responses || 0,
+          })
+        );
+
+        setSurveys(frontendSurveys);
+      } catch (error) {
+        console.error("설문 목록 로드 실패:", error);
+        setSurveys([]);
+      }
     };
 
     loadSurveys();

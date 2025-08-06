@@ -1,31 +1,121 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { surveyStore } from "../store/surveyStore";
-import type { Survey } from "../types/survey";
+import { apiService } from "../services/api";
+import { commonStyles } from "../styles/common";
+import { useBehaviorTracking } from "../hooks/useBehaviorTracking";
+import { behaviorLogger } from "../services/behaviorLogger";
+import type { Survey, FrontendSurvey } from "../types/survey";
 
 export default function SurveyPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [survey, setSurvey] = useState<Survey | null>(null);
+  const [survey, setSurvey] = useState<FrontendSurvey | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
 
   useEffect(() => {
-    if (id) {
-      const foundSurvey = surveyStore.getSurveyById(id);
-      if (foundSurvey) {
-        setSurvey(foundSurvey);
-        setAnswers(new Array(foundSurvey.questions.length).fill(-1));
+    const loadSurvey = async () => {
+      if (id) {
+        try {
+          const backendSurvey = await apiService.getSurveyById(id);
+          if (backendSurvey) {
+            // 백엔드 응답을 프론트엔드 형식으로 변환
+            const frontendSurvey: FrontendSurvey = {
+              id: backendSurvey.surveyId.toString(),
+              title: backendSurvey.title,
+              description: backendSurvey.subTitle,
+              questions:
+                backendSurvey.questions?.map((q: any) => ({
+                  questionId: q.questionId, // 반드시 포함!
+                  question: q.content || q.text, // 질문 내용
+                  options: q.choices?.map((c: any) => c.text) || [],
+                })) || [],
+              responses: backendSurvey.responses || 0,
+            };
+
+            setSurvey(frontendSurvey);
+            setAnswers(new Array(frontendSurvey.questions.length).fill(-1));
+            // 설문 ID를 behaviorLogger에 설정
+            behaviorLogger.setSurveyId(frontendSurvey.title);
+          }
+        } catch (error) {
+          console.error("설문 로드 실패:", error);
+        }
       }
-    }
+    };
+
+    loadSurvey();
   }, [id]);
+
+  // 현재 질문 정보
+  const currentQuestion = survey?.questions[currentQuestionIndex];
+
+  // 실제 DB questionId 추출
+  const currentBackendQuestionId =
+    survey?.questions[currentQuestionIndex]?.questionId?.toString() || "";
+  console.log(
+    "[SurveyPage] currentBackendQuestionId:",
+    currentBackendQuestionId
+  );
+  console.log("[SurveyPage] currentQuestion:", currentQuestion);
+
+  // 행동 데이터 추적 훅 사용 (실제 DB questionId 사용)
+  const behaviorTracking = useBehaviorTracking({
+    questionId: currentBackendQuestionId,
+    options: currentQuestion?.options || [],
+  });
+  console.log(
+    "[SurveyPage] useBehaviorTracking 호출됨, questionId:",
+    currentBackendQuestionId
+  );
+
+  const handleAnswerSelect = useCallback(
+    (optionIndex: number) => {
+      setAnswers((prev) => {
+        const newAnswers = [...prev];
+        newAnswers[currentQuestionIndex] = optionIndex;
+        return newAnswers;
+      });
+
+      // 행동 데이터 추적: 선택 이벤트
+      if (currentQuestion) {
+        behaviorTracking.handleSelect(`option_${optionIndex}`);
+      }
+    },
+    [currentQuestionIndex, currentQuestion, behaviorTracking]
+  );
+
+  const handlePrevious = useCallback(() => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+    }
+  }, [currentQuestionIndex]);
+
+  const handleNext = useCallback(async () => {
+    if (answers[currentQuestionIndex] === -1) {
+      alert("답변을 선택해주세요.");
+      return;
+    }
+
+    if (currentQuestionIndex === survey!.questions.length - 1) {
+      // 설문 완료
+      try {
+        await apiService.submitSurveyResponse(survey!.id, answers);
+        navigate(`/survey/${survey!.id}/complete`);
+      } catch (error) {
+        console.error("설문 응답 제출 실패:", error);
+        alert("설문 응답 제출 중 오류가 발생했습니다. 다시 시도해주세요.");
+      }
+    } else {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    }
+  }, [answers, currentQuestionIndex, survey, navigate]);
 
   if (!survey) {
     return (
       <div
         style={{
-          background: "#E9E9E9",
-          minHeight: "100vh",
+          ...commonStyles.container,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -33,7 +123,7 @@ export default function SurveyPage() {
       >
         <div style={{ textAlign: "center" }}>
           <h2>설문을 찾을 수 없습니다.</h2>
-          <Link to="/" style={{ color: "#333", textDecoration: "none" }}>
+          <Link to="/" style={commonStyles.link}>
             메인으로 돌아가기
           </Link>
         </div>
@@ -41,75 +131,20 @@ export default function SurveyPage() {
     );
   }
 
-  const currentQuestion = survey.questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / survey.questions.length) * 100;
   const isLastQuestion = currentQuestionIndex === survey.questions.length - 1;
 
-  const handleAnswerSelect = (optionIndex: number) => {
-    const newAnswers = [...answers];
-    newAnswers[currentQuestionIndex] = optionIndex;
-    setAnswers(newAnswers);
-  };
-
-  const handlePrevious = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
-    }
-  };
-
-  const handleNext = () => {
-    if (answers[currentQuestionIndex] === -1) {
-      alert("답변을 선택해주세요.");
-      return;
-    }
-
-    if (isLastQuestion) {
-      // 설문 완료
-      surveyStore.submitResponse(survey.id, answers);
-      navigate(`/survey/${survey.id}/complete`);
-    } else {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    }
-  };
-
   return (
-    <div
-      style={{
-        background: "#E9E9E9",
-        minHeight: "100vh",
-        padding: "2rem",
-      }}
-    >
+    <div style={commonStyles.container}>
       <div style={{ marginBottom: "2rem" }}>
-        <Link
-          to="/"
-          style={{
-            color: "#000000",
-            textDecoration: "none",
-            fontSize: "0.9rem",
-          }}
-        >
+        <Link to="/" style={commonStyles.link}>
           메인으로 돌아가기
         </Link>
       </div>
 
       {/* 설문 제목 */}
-      <div
-        style={{
-          textAlign: "center",
-          marginBottom: "2rem",
-        }}
-      >
-        <h2
-          style={{
-            fontSize: "1.8rem",
-            fontWeight: "bold",
-            margin: "0 0 1rem 0",
-            color: "#000000",
-          }}
-        >
-          {survey.title}
-        </h2>
+      <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+        <h2 style={commonStyles.title}>{survey.title}</h2>
 
         {/* 진행률 */}
         <div style={{ marginBottom: "1rem" }}>
@@ -118,8 +153,7 @@ export default function SurveyPage() {
               display: "flex",
               justifyContent: "space-between",
               marginBottom: "0.5rem",
-              fontSize: "0.9rem",
-              color: "#565656",
+              ...commonStyles.text.small,
             }}
           >
             <span>
@@ -140,7 +174,7 @@ export default function SurveyPage() {
               style={{
                 width: `${progress}%`,
                 height: "100%",
-                background: "#007bff",
+                background: "#000000",
                 transition: "width 0.3s ease",
               }}
             />
@@ -149,31 +183,14 @@ export default function SurveyPage() {
       </div>
 
       {/* 질문 카드 */}
-      <div
-        style={{
-          background: "#fff",
-          padding: "2rem",
-          borderRadius: "8px",
-          marginBottom: "2rem",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-        }}
-      >
-        <h3
-          style={{
-            fontSize: "1.3rem",
-            fontWeight: "bold",
-            margin: "0 0 1.5rem 0",
-            color: "#000000",
-          }}
-        >
-          {currentQuestion.question}
-        </h3>
+      <div style={{ ...commonStyles.card, marginBottom: "2rem" }}>
+        <h3 style={commonStyles.subtitle}>{currentQuestion?.question}</h3>
 
         {/* 선택지 */}
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
         >
-          {currentQuestion.options.map((option, index) => (
+          {currentQuestion?.options.map((option, index) => (
             <button
               key={index}
               onClick={() => handleAnswerSelect(index)}
@@ -192,12 +209,20 @@ export default function SurveyPage() {
                 transition: "all 0.2s ease",
               }}
               onMouseEnter={(e) => {
+                // 행동 데이터 추적
+                behaviorTracking.handleMouseEnter(`option_${index}`);
+
+                // 스타일 변경
                 if (answers[currentQuestionIndex] !== index) {
                   e.currentTarget.style.backgroundColor = "#f5f5f5";
                   e.currentTarget.style.borderColor = "#007bff";
                 }
               }}
               onMouseLeave={(e) => {
+                // 행동 데이터 추적
+                behaviorTracking.handleMouseLeave(`option_${index}`);
+
+                // 스타일 변경
                 if (answers[currentQuestionIndex] !== index) {
                   e.currentTarget.style.backgroundColor = "#fff";
                   e.currentTarget.style.borderColor = "#ddd";
@@ -222,15 +247,9 @@ export default function SurveyPage() {
           onClick={handlePrevious}
           disabled={currentQuestionIndex === 0}
           style={{
-            background: "#f5f5f5",
-            color: "#333",
-            border: "none",
-            padding: "0.75rem 1.5rem",
-            borderRadius: "6px",
-            cursor: currentQuestionIndex === 0 ? "not-allowed" : "pointer",
-            fontSize: "1rem",
+            ...commonStyles.button.secondary,
             opacity: currentQuestionIndex === 0 ? 0.5 : 1,
-            transition: "background-color 0.2s ease",
+            cursor: currentQuestionIndex === 0 ? "not-allowed" : "pointer",
           }}
           onMouseEnter={(e) => {
             if (currentQuestionIndex > 0) {
@@ -247,16 +266,7 @@ export default function SurveyPage() {
         </button>
         <button
           onClick={handleNext}
-          style={{
-            background: "#000",
-            color: "#fff",
-            border: "none",
-            padding: "0.75rem 1.5rem",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontSize: "1rem",
-            transition: "background-color 0.2s ease",
-          }}
+          style={commonStyles.button.primary}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = "#333";
           }}
