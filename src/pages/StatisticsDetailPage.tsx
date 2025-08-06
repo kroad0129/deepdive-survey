@@ -1,12 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { apiService } from "../services/api";
-import type {
-  Survey,
-  SurveyResponse,
-  FrontendSurvey,
-  FrontendSurveyResponse,
-} from "../types/survey";
+import type { FrontendSurvey, FrontendSurveyResponse } from "../types/survey";
 
 export default function StatisticsDetailPage() {
   const { id } = useParams<{ id: string }>();

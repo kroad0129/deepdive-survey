@@ -4,7 +4,7 @@ import { apiService } from "../services/api";
 import { commonStyles } from "../styles/common";
 import { useBehaviorTracking } from "../hooks/useBehaviorTracking";
 import { behaviorLogger } from "../services/behaviorLogger";
-import type { Survey, FrontendSurvey } from "../types/survey";
+import type { FrontendSurvey } from "../types/survey";
 
 export default function SurveyPage() {
   const { id } = useParams<{ id: string }>();

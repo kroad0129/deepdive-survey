@@ -53,7 +53,7 @@ export interface EventLog {
   questionId: number; // FK, 문항ID (BIGINT) - OpenAPI 명세에 맞춤
   eventType: string; // 이벤트 유형 (VARCHAR(255))
   timestamp_ms: string; // 이벤트 발생 시각 (DATETIME(6) 형식)
-  payLoad: string; // 이벤트별 상세 데이터 (JSON 문자열)
+  payLoad: any; // 이벤트별 상세 데이터 (JSON 문자열)
 }
 
 // 기존 호환성을 위한 타입 (점진적 마이그레이션용)

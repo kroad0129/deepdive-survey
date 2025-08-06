@@ -1,9 +1,4 @@
-import type {
-  BehaviorLog,
-  BehaviorEventType,
-  BehaviorLogPayload,
-  EventLog,
-} from "../types/behavior";
+import type { BehaviorLogPayload, EventLog } from "../types/behavior";
 
 import { API_BASE_URL } from "./baseUrl";
 
@@ -45,16 +40,6 @@ class BehaviorLogger {
     this.surveyId = surveyId;
   }
 
-  // questionId를 number로 변환 (DB FK 타입에 맞춤)
-  private parseQuestionId(questionId: string): number {
-    // "question_0" -> 0, "question_1" -> 1
-    if (questionId.startsWith("question_")) {
-      return parseInt(questionId.replace("question_", ""));
-    }
-    // fallback: 숫자 문자열 등은 0 반환
-    return 0;
-  }
-
   // timestamp를 DATETIME(6) 형식으로 변환
   private formatTimestamp(timestamp: number): string {
     const date = new Date(timestamp);
@@ -62,7 +47,7 @@ class BehaviorLogger {
   }
 
   // 이벤트 타입을 한글로 변환
-  private getEventTypeKorean(eventType: BehaviorEventType): string {
+  private getEventTypeKorean(eventType: string): string {
     const eventTypeMap = {
       hover: "호버",
       selection_change: "선택 변경",
@@ -89,12 +74,12 @@ class BehaviorLogger {
   // BehaviorLog를 EventLog로 변환
   private convertToEventLog(
     questionId: string,
-    eventType: BehaviorEventType,
+    eventType: string,
     payload: BehaviorLogPayload
   ): EventLog {
     return {
       questionId: Number(questionId), // 실제 DB questionId
-      eventType: eventType as string,
+      eventType: eventType,
       timestamp_ms: this.formatTimestamp(Date.now()),
       payLoad: payload, // 객체 그대로 전송
     };
@@ -106,9 +91,7 @@ class BehaviorLogger {
 
     // 개발 환경에서는 콘솔에 로그 출력
     if (this.isDevelopment) {
-      const eventTypeKorean = this.getEventTypeKorean(
-        log.eventType as BehaviorEventType
-      );
+      const eventTypeKorean = this.getEventTypeKorean(log.eventType);
       const timestamp = new Date(log.timestamp_ms).toLocaleTimeString();
 
       // 백엔드 연결 상태 표시
@@ -172,11 +155,7 @@ class BehaviorLogger {
   }
 
   // 큐에 로그 추가
-  addLog(
-    questionId: string,
-    eventType: BehaviorEventType,
-    payload: BehaviorLogPayload
-  ) {
+  addLog(questionId: string, eventType: string, payload: BehaviorLogPayload) {
     if (!this.isEnabled) return;
 
     const eventLog = this.convertToEventLog(questionId, eventType, payload);
