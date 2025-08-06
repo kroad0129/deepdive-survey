@@ -48,7 +48,7 @@ class BehaviorLogger {
 
   // 이벤트 타입을 한글로 변환
   private getEventTypeKorean(eventType: string): string {
-    const eventTypeMap = {
+    const eventTypeMap: { [key: string]: string } = {
       hover: "호버",
       selection_change: "선택 변경",
       idle_period: "정지 시간",
