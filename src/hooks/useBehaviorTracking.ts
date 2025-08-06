@@ -1,16 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { behaviorLogger } from "../services/behaviorLogger";
-import type { BehaviorEventType, BehaviorLogPayload } from "../types/behavior";
 
 interface UseBehaviorTrackingProps {
   questionId: string;
   options: string[];
 }
 
-export function useBehaviorTracking({
-  questionId,
-  options,
-}: UseBehaviorTrackingProps) {
+export function useBehaviorTracking({ questionId }: UseBehaviorTrackingProps) {
   // 호버 시작 시간 기록
   const hoverStartTimes = useRef(new Map<string, number>());
 
