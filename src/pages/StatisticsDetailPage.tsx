@@ -415,30 +415,24 @@ export default function StatisticsDetailPage() {
                       marginBottom: "0.5rem",
                     }}
                   >
-                    <span style={{ fontSize: "0.9rem", fontWeight: "bold" }}>
-                      클릭 수
+                    <span
+                      style={{
+                        fontSize: "0.9rem",
+                        fontWeight: "bold",
+                        color: "#000000",
+                      }}
+                    >
+                      평균 클릭 수
                     </span>
                   </div>
                   <div
                     style={{
-                      display: "flex",
-                      gap: "1rem",
-                      fontSize: "0.8rem",
+                      fontSize: "1.2rem",
+                      fontWeight: "bold",
                       color: "#666",
                     }}
                   >
-                    <div>
-                      <div>최소</div>
-                      <div>0회</div>
-                    </div>
-                    <div>
-                      <div>최대</div>
-                      <div>0회</div>
-                    </div>
-                    <div>
-                      <div>평균</div>
-                      <div>0회</div>
-                    </div>
+                    0회
                   </div>
                 </div>
 
@@ -603,15 +597,21 @@ export default function StatisticsDetailPage() {
                   marginBottom: "1rem",
                 }}
               >
-                <span style={{ fontSize: "1rem", fontWeight: "bold" }}>
-                  선택지 변경 횟수
+                <span
+                  style={{
+                    fontSize: "1rem",
+                    fontWeight: "bold",
+                    color: "#000000",
+                  }}
+                >
+                  평균 선택지 변경 횟수
                 </span>
               </div>
               <div
                 style={{
                   fontSize: "1.5rem",
                   fontWeight: "bold",
-                  color: "#000000",
+                  color: "#666",
                 }}
               >
                 0회
