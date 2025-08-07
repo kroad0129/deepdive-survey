@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://northwest-grow-travesti-compliance.trycloudflare.com/api/:path*"
+    }
+  ]
+}
