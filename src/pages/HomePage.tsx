@@ -13,7 +13,6 @@ export default function HomePage() {
       try {
         const backendSurveys = await apiService.getSurveys();
 
-        // 백엔드 응답을 프론트엔드 형식으로 변환
         const frontendSurveys: FrontendSurvey[] = backendSurveys.map(
           (survey: Survey) => ({
             id: survey.surveyId.toString(),
@@ -109,7 +108,6 @@ export default function HomePage() {
               title={survey.title}
               subtitle={survey.description}
               itemCount={survey.questions.length}
-              participantCount={survey.responses || 0}
             />
           ))}
         </div>

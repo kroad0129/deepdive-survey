@@ -11,18 +11,64 @@ export default function StatisticsPage() {
       try {
         const backendSurveys = await apiService.getSurveys();
 
-        // 백엔드 응답을 프론트엔드 형식으로 변환
-        const frontendSurveys: FrontendSurvey[] = backendSurveys.map(
-          (survey: Survey) => ({
-            id: survey.surveyId.toString(),
-            title: survey.title,
-            description: survey.subTitle,
-            questions:
-              survey.questions?.map((q: any) => ({
-                question: q.text,
-                options: q.choices?.map((c: any) => c.text) || [],
-              })) || [],
-            responses: survey.responses || 0,
+        // 각 설문의 실제 참여자 수를 계산
+        const frontendSurveys: FrontendSurvey[] = await Promise.all(
+          backendSurveys.map(async (survey: Survey) => {
+            try {
+              // 각 설문의 선택지 카운트를 가져와서 참여자 수 계산
+              const choiceCounts = await apiService.getChoiceCountsBySurvey(
+                survey.surveyId.toString()
+              );
+
+              // 모든 질문의 선택지 카운트에서 최대값을 참여자 수로 사용
+              const questions = await apiService.getQuestionsBySurvey(
+                survey.surveyId.toString()
+              );
+              const totalParticipants = Math.max(
+                ...questions.map((question: any) => {
+                  const questionChoiceCounts = question.choices.map(
+                    (choice: any) => {
+                      const choiceCount = choiceCounts.find(
+                        (cc: any) => cc.choiceId === choice.choiceId
+                      );
+                      return choiceCount ? choiceCount.count : 0;
+                    }
+                  );
+                  return questionChoiceCounts.reduce(
+                    (sum: number, count: number) => sum + count,
+                    0
+                  );
+                })
+              );
+
+              return {
+                id: survey.surveyId.toString(),
+                title: survey.title,
+                description: survey.subTitle,
+                questions:
+                  survey.questions?.map((q: any) => ({
+                    question: q.text,
+                    options: q.choices?.map((c: any) => c.text) || [],
+                  })) || [],
+                responses: totalParticipants,
+              };
+            } catch (error) {
+              console.error(
+                `설문 ${survey.surveyId} 참여자 수 계산 실패:`,
+                error
+              );
+              return {
+                id: survey.surveyId.toString(),
+                title: survey.title,
+                description: survey.subTitle,
+                questions:
+                  survey.questions?.map((q: any) => ({
+                    question: q.text,
+                    options: q.choices?.map((c: any) => c.text) || [],
+                  })) || [],
+                responses: 0,
+              };
+            }
           })
         );
 
@@ -123,45 +169,47 @@ export default function StatisticsPage() {
               >
                 {survey.description}
               </p>
+            </div>
+
+            <div style={{ marginTop: "auto" }}>
               <p
                 style={{
                   fontSize: "0.8rem",
-                  color: "#C3C3C3",
-                  margin: 0,
+                  color: "#565656",
+                  margin: "0 0 1rem 0",
                 }}
               >
                 {survey.questions.length}개 항목 · {survey.responses}명 참여
               </p>
-            </div>
 
-            <Link
-              to={`/statistics/${survey.id}`}
-              style={{ textDecoration: "none" }}
-            >
-              <button
-                style={{
-                  background: "#000",
-                  color: "#fff",
-                  border: "none",
-                  padding: "0.75rem 1rem",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "0.9rem",
-                  fontWeight: "500",
-                  width: "100%",
-                  marginTop: "1rem",
-                  transition: "background-color 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#333";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#000";
-                }}
+              <Link
+                to={`/statistics/${survey.id}`}
+                style={{ textDecoration: "none" }}
               >
-                통계 보기
-              </button>
-            </Link>
+                <button
+                  style={{
+                    background: "#000",
+                    color: "#fff",
+                    border: "none",
+                    padding: "0.75rem 1rem",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontSize: "0.9rem",
+                    fontWeight: "500",
+                    width: "100%",
+                    transition: "background-color 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#333";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#000";
+                  }}
+                >
+                  통계 보기
+                </button>
+              </Link>
+            </div>
           </div>
         ))}
       </div>

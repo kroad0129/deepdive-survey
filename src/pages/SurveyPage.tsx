@@ -26,8 +26,8 @@ export default function SurveyPage() {
               description: backendSurvey.subTitle,
               questions:
                 backendSurvey.questions?.map((q: any) => ({
-                  questionId: q.questionId, // 반드시 포함!
-                  question: q.content || q.text, // 질문 내용
+                  questionId: q.questionId,
+                  question: q.content || q.text,
                   options: q.choices?.map((c: any) => c.text) || [],
                 })) || [],
               responses: backendSurvey.responses || 0,
@@ -59,7 +59,7 @@ export default function SurveyPage() {
   );
   console.log("[SurveyPage] currentQuestion:", currentQuestion);
 
-  // 행동 데이터 추적 훅 사용 (실제 DB questionId 사용)
+  // 행동 데이터 추적
   const behaviorTracking = useBehaviorTracking({
     questionId: currentBackendQuestionId,
     options: currentQuestion?.options || [],
@@ -77,7 +77,7 @@ export default function SurveyPage() {
         return newAnswers;
       });
 
-      // 행동 데이터 추적: 선택 이벤트
+      // 행동 데이터 추적
       if (currentQuestion) {
         behaviorTracking.handleSelect(`option_${optionIndex}`);
       }
@@ -100,7 +100,18 @@ export default function SurveyPage() {
     if (currentQuestionIndex === survey!.questions.length - 1) {
       // 설문 완료
       try {
-        await apiService.submitSurveyResponse(survey!.id, answers);
+        const questions = await apiService.getQuestionsBySurvey(survey!.id);
+
+        for (let i = 0; i < answers.length; i++) {
+          const question = questions[i];
+          const selectedAnswerIndex = answers[i];
+          const selectedChoice = question.choices[selectedAnswerIndex];
+
+          if (selectedChoice) {
+            await apiService.incrementChoiceCount(selectedChoice.choiceId);
+          }
+        }
+
         navigate(`/survey/${survey!.id}/complete`);
       } catch (error) {
         console.error("설문 응답 제출 실패:", error);
@@ -209,20 +220,16 @@ export default function SurveyPage() {
                 transition: "all 0.2s ease",
               }}
               onMouseEnter={(e) => {
-                // 행동 데이터 추적
                 behaviorTracking.handleMouseEnter(`option_${index}`);
 
-                // 스타일 변경
                 if (answers[currentQuestionIndex] !== index) {
                   e.currentTarget.style.backgroundColor = "#f5f5f5";
                   e.currentTarget.style.borderColor = "#007bff";
                 }
               }}
               onMouseLeave={(e) => {
-                // 행동 데이터 추적
                 behaviorTracking.handleMouseLeave(`option_${index}`);
 
-                // 스타일 변경
                 if (answers[currentQuestionIndex] !== index) {
                   e.currentTarget.style.backgroundColor = "#fff";
                   e.currentTarget.style.borderColor = "#ddd";

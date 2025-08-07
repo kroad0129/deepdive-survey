@@ -20,6 +20,16 @@ export interface EventLogRequest {
   payLoad: Record<string, any>;
 }
 
+export interface ChoiceCountRequest {
+  choiceId: number;
+}
+
+export interface ChoiceCountResponse {
+  choiceId: number;
+  choiceText: string;
+  count: number;
+}
+
 class ApiService {
   private async request<T>(
     endpoint: string,
@@ -43,7 +53,20 @@ class ApiService {
         );
       }
 
-      return await response.json();
+      // 응답 본문이 있는지 확인
+      const contentType = response.headers.get("content-type");
+      const text = await response.text();
+
+      if (
+        contentType &&
+        contentType.includes("application/json") &&
+        text.trim()
+      ) {
+        return JSON.parse(text);
+      } else {
+        // JSON이 아닌 응답이나 빈 응답의 경우
+        return {} as T;
+      }
     } catch (error) {
       console.error("API 요청 오류:", error);
       throw error;
@@ -80,7 +103,24 @@ class ApiService {
     });
   }
 
-  // 설문 응답 제출 API
+  // 선택지 카운트 증가 API (설문 제출)
+  async incrementChoiceCount(choiceId: number): Promise<void> {
+    await this.request("/api/choice-counts/increment", {
+      method: "POST",
+      body: JSON.stringify({ choiceId }),
+    });
+  }
+
+  // 설문별 선택지 통계 조회 API
+  async getChoiceCountsBySurvey(
+    surveyId: string
+  ): Promise<ChoiceCountResponse[]> {
+    return this.request(`/api/choice-counts/survey/${surveyId}`, {
+      method: "GET",
+    });
+  }
+
+  // 설문 응답 제출 API (기존 - 호환성을 위해 유지)
   async submitSurveyResponse(
     surveyId: string,
     answers: number[]
@@ -91,7 +131,7 @@ class ApiService {
     });
   }
 
-  // 설문 응답 조회 API
+  // 설문 응답 조회 API (기존 - 호환성을 위해 유지)
   async getSurveyResponses(surveyId: string): Promise<any> {
     return this.request(`/api/surveys/${surveyId}/responses`, {
       method: "GET",

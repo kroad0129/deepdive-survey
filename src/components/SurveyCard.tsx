@@ -6,7 +6,7 @@ interface SurveyCardProps {
   title: string;
   subtitle: string;
   itemCount: number;
-  participantCount: number;
+  participantCount?: number;
 }
 
 export default function SurveyCard({
@@ -47,7 +47,7 @@ export default function SurveyCard({
             margin: "0 0 1rem 0",
           }}
         >
-          {itemCount}개 항목 · {participantCount}명 참여
+          {itemCount}개 항목
         </p>
 
         <Link to={`/survey/${id}`}>

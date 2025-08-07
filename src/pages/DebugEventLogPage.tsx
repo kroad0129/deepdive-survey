@@ -35,7 +35,6 @@ export default function DebugEventLogPage() {
 
   useEffect(() => {
     fetchLogs();
-    // eslint-disable-next-line
   }, []);
 
   return (

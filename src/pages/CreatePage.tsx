@@ -3,7 +3,6 @@ import { useNavigate, Link } from "react-router-dom";
 import QuestionForm from "../components/QuestionForm";
 import { apiService } from "../services/api";
 
-// 프론트엔드용 질문 타입 정의
 interface CreateQuestion {
   question: string;
   options: string[];
@@ -61,14 +60,14 @@ export default function CreatePage() {
       errors.push("설문 부제목을 입력해주세요.");
     }
 
-    // 질문들 검사
+    // 질문 검사
     questions.forEach((question, qIndex) => {
       // 질문 텍스트 검사
       if (!question.question.trim()) {
         errors.push(`질문 ${qIndex + 1}의 내용을 입력해주세요.`);
       }
 
-      // 선택지 검사 (5개 모두 입력되어야 함)
+      // 선택지 검사
       const validOptions = question.options.filter(
         (option: string) => option.trim() !== ""
       );
@@ -101,7 +100,7 @@ export default function CreatePage() {
           text: q.question.trim(),
           sequence: qIndex,
           options: q.options
-            .filter((option: string) => option.trim() !== "") // 빈 선택지 제거
+            .filter((option: string) => option.trim() !== "")
             .map((option: string, oIndex: number) => ({
               text: option.trim(),
               sequence: oIndex,
@@ -112,7 +111,6 @@ export default function CreatePage() {
       const apiResponse = await apiService.createSurvey(surveyData);
       console.log("백엔드 API 응답:", apiResponse);
 
-      // 저장 후 완료 페이지로 이동
       navigate("/create/complete");
     } catch (error) {
       console.error("설문 생성 실패:", error);
