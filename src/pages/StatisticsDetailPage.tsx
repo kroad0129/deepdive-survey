@@ -1112,7 +1112,7 @@ export default function StatisticsDetailPage() {
                 질문 선택
               </h4>
               <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                {survey.questions.map((question, index) => (
+                {survey.questions.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedQuestion(index)}

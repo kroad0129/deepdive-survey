@@ -14,7 +14,6 @@ export default function SurveyCard({
   title,
   subtitle,
   itemCount,
-  participantCount,
 }: SurveyCardProps) {
   return (
     <div
