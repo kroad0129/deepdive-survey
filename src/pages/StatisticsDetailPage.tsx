@@ -39,7 +39,6 @@ export default function StatisticsDetailPage() {
   const [loadingStats, setLoadingStats] = useState(false);
   const [totalParticipants, setTotalParticipants] = useState(0);
   const [sankeyData, setSankeyData] = useState<any[]>([]);
-  const [loadingSankey, setLoadingSankey] = useState(false);
 
   // 새로운 통계 데이터 상태들
   const [selectionChange, setSelectionChange] = useState<any>(null);
@@ -743,7 +742,7 @@ export default function StatisticsDetailPage() {
               minHeight: "400px",
             }}
           >
-            {loadingSankey ? (
+            {loadingAdvancedStats ? (
               <div
                 style={{ textAlign: "center", padding: "2rem", color: "#666" }}
               >
