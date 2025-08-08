@@ -41,6 +41,14 @@ export default function StatisticsDetailPage() {
   const [sankeyData, setSankeyData] = useState<any[]>([]);
   const [loadingSankey, setLoadingSankey] = useState(false);
 
+  // 새로운 통계 데이터 상태들
+  const [selectionChange, setSelectionChange] = useState<any>(null);
+  const [questionTimeStats, setQuestionTimeStats] = useState<any>(null);
+  const [idleStats, setIdleStats] = useState<any>(null);
+  const [hoverStats, setHoverStats] = useState<any>(null);
+  const [clickPerOptionStats, setClickPerOptionStats] = useState<any>(null);
+  const [loadingAdvancedStats, setLoadingAdvancedStats] = useState(false);
+
   useEffect(() => {
     const loadSurveyData = async () => {
       if (id) {
@@ -157,44 +165,82 @@ export default function StatisticsDetailPage() {
     }
   }, [survey, selectedQuestion, viewMode, advancedView]);
 
-  // Sankey 차트 데이터 로드
+  // 고급 통계 데이터 로드
   useEffect(() => {
-    const loadSankeyData = async () => {
+    const loadAdvancedStats = async () => {
       if (
         survey &&
         selectedQuestion >= 0 &&
         viewMode === "advanced" &&
         advancedView === "detail"
       ) {
-        setLoadingSankey(true);
+        setLoadingAdvancedStats(true);
         try {
           const questions = await apiService.getQuestionsBySurvey(survey.id);
           const selectedQuestionData = questions[selectedQuestion];
 
           if (selectedQuestionData) {
-            // TODO: 실제 API가 구현되면 이 부분을 교체
-            // const data = await fetch(`/api/sankey/question/${selectedQuestionData.questionId}`).then(res => res.json());
+            const questionId = selectedQuestionData.questionId.toString();
+            console.log("로딩 중인 질문 ID:", questionId);
 
-            // 임시 샘플 데이터
-            const sampleData = [
-              { from: "시작", to: "선택지 1", size: 5 },
-              { from: "시작", to: "선택지 2", size: 3 },
-              { from: "선택지 1", to: "최종 선택", size: 4 },
-              { from: "선택지 2", to: "최종 선택", size: 2 },
-            ];
+            // 모든 통계 데이터를 병렬로 로드
+            const [
+              selectionData,
+              avgTimeData,
+              minTimeData,
+              maxTimeData,
+              idleData,
+              hoverData,
+              clickPerOptionData,
+              sankeyData,
+            ] = await Promise.all([
+              apiService.getSelectionChange(questionId),
+              apiService.getAverageTimeForQuestion(questionId),
+              apiService.getMinTimeForQuestion(questionId),
+              apiService.getMaxTimeForQuestion(questionId),
+              apiService.getIdleStats(questionId),
+              apiService.getHoverStats(questionId),
+              apiService.getClickPerOptionStats(questionId),
+              apiService.getSankeyData(questionId),
+            ]);
 
-            setSankeyData(sampleData);
+            console.log("로드된 데이터:", {
+              selectionData,
+              avgTimeData,
+              minTimeData,
+              maxTimeData,
+              idleData,
+              hoverData,
+              clickPerOptionData,
+              sankeyData,
+            });
+            setSelectionChange(selectionData);
+            setQuestionTimeStats({
+              average: avgTimeData,
+              min: minTimeData,
+              max: maxTimeData,
+            });
+            setIdleStats(idleData);
+            setHoverStats(hoverData);
+            setClickPerOptionStats(clickPerOptionData);
+            setSankeyData(sankeyData);
           }
         } catch (error) {
-          console.error("Sankey 차트 데이터 로드 실패:", error);
+          console.error("고급 통계 데이터 로드 실패:", error);
+          // 에러 발생 시 기본값 설정
+          setSelectionChange(null);
+          setQuestionTimeStats(null);
+          setIdleStats(null);
+          setHoverStats(null);
+          setClickPerOptionStats(null);
           setSankeyData([]);
         } finally {
-          setLoadingSankey(false);
+          setLoadingAdvancedStats(false);
         }
       }
     };
 
-    loadSankeyData();
+    loadAdvancedStats();
   }, [survey, selectedQuestion, viewMode, advancedView]);
 
   if (!survey) {
@@ -353,6 +399,23 @@ export default function StatisticsDetailPage() {
     const question = survey.questions[selectedQuestion];
     const options = question.options;
 
+    console.log("AdvancedDetailView 렌더링:", {
+      loadingAdvancedStats,
+      hoverStats,
+      idleStats,
+      questionTimeStats,
+      selectionChange,
+      sankeyData,
+    });
+
+    if (loadingAdvancedStats) {
+      return (
+        <div style={{ textAlign: "center", padding: "2rem", color: "#666" }}>
+          고급 통계 데이터를 불러오는 중...
+        </div>
+      );
+    }
+
     return (
       <div>
         <h3
@@ -385,94 +448,120 @@ export default function StatisticsDetailPage() {
               gap: "1rem",
             }}
           >
-            {options.map((option, index) => (
-              <div
-                key={index}
-                style={{
-                  background: "#fff",
-                  padding: "1.5rem",
-                  borderRadius: "8px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                }}
-              >
-                <h5
-                  style={{
-                    fontSize: "1rem",
-                    fontWeight: "bold",
-                    margin: "0 0 1rem 0",
-                    color: "#000000",
-                  }}
-                >
-                  {option}
-                </h5>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "1rem",
+              }}
+            >
+              {options.map((option, index) => {
+                // 호버 통계에서 해당 선택지 데이터 찾기
+                const optionHoverStats = hoverStats?.optionStats?.find(
+                  (stat: any) => stat.optionId === (index + 1).toString()
+                );
 
-                {/* 클릭 수 */}
-                <div style={{ marginBottom: "1rem" }}>
+                // 선택지별 클릭 통계에서 해당 선택지 데이터 찾기
+                const optionClickStats = clickPerOptionStats?.optionStats?.find(
+                  (stat: any) => stat.optionId === (index + 1).toString()
+                );
+
+                return (
                   <div
+                    key={index}
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      marginBottom: "0.5rem",
+                      background: "#fff",
+                      padding: "1.5rem",
+                      borderRadius: "8px",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                     }}
                   >
-                    <span
+                    <h5
                       style={{
-                        fontSize: "0.9rem",
+                        fontSize: "1rem",
                         fontWeight: "bold",
+                        margin: "0 0 1rem 0",
                         color: "#000000",
                       }}
                     >
-                      평균 클릭 수
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "1.2rem",
-                      fontWeight: "bold",
-                      color: "#666",
-                    }}
-                  >
-                    0회
-                  </div>
-                </div>
+                      {option}
+                    </h5>
 
-                {/* 호버 시간 */}
-                <div>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      marginBottom: "0.5rem",
-                    }}
-                  >
-                    <span style={{ fontSize: "0.9rem", fontWeight: "bold" }}>
-                      호버 시간
-                    </span>
+                    {/* 클릭 수 */}
+                    <div style={{ marginBottom: "1rem" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          marginBottom: "0.5rem",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: "0.9rem",
+                            fontWeight: "bold",
+                            color: "#000000",
+                          }}
+                        >
+                          평균 클릭 수
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "1.2rem",
+                          fontWeight: "bold",
+                          color: "#666",
+                        }}
+                      >
+                        {optionClickStats?.clickPerParticipant?.toFixed(1) ||
+                          "0"}
+                        회
+                      </div>
+                    </div>
+
+                    {/* 호버 시간 */}
+                    <div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          marginBottom: "0.5rem",
+                        }}
+                      >
+                        <span
+                          style={{ fontSize: "0.9rem", fontWeight: "bold" }}
+                        >
+                          호버 시간
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "1rem",
+                          fontSize: "0.8rem",
+                          color: "#666",
+                        }}
+                      >
+                        <div>
+                          <div>최소</div>
+                          <div>{optionHoverStats?.min || 0}ms</div>
+                        </div>
+                        <div>
+                          <div>최대</div>
+                          <div>{optionHoverStats?.max || 0}ms</div>
+                        </div>
+                        <div>
+                          <div>평균</div>
+                          <div>
+                            {optionHoverStats?.average?.toFixed(0) || 0}ms
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "1rem",
-                      fontSize: "0.8rem",
-                      color: "#666",
-                    }}
-                  >
-                    <div>
-                      <div>최소</div>
-                      <div>0ms</div>
-                    </div>
-                    <div>
-                      <div>최대</div>
-                      <div>0ms</div>
-                    </div>
-                    <div>
-                      <div>평균</div>
-                      <div>0ms</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -495,126 +584,139 @@ export default function StatisticsDetailPage() {
               gap: "1rem",
             }}
           >
-            {/* 마우스 정지시간 */}
             <div
               style={{
-                background: "#fff",
-                padding: "1.5rem",
-                borderRadius: "8px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                gap: "1rem",
               }}
             >
+              {/* 마우스 정지시간 */}
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  marginBottom: "1rem",
+                  background: "#fff",
+                  padding: "1.5rem",
+                  borderRadius: "8px",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                 }}
               >
-                <span style={{ fontSize: "1rem", fontWeight: "bold" }}>
-                  마우스 정지시간
-                </span>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  gap: "1rem",
-                  fontSize: "0.8rem",
-                  color: "#666",
-                }}
-              >
-                <div>
-                  <div>최소</div>
-                  <div>0ms</div>
-                </div>
-                <div>
-                  <div>최대</div>
-                  <div>0ms</div>
-                </div>
-                <div>
-                  <div>평균</div>
-                  <div>0ms</div>
-                </div>
-              </div>
-            </div>
-
-            {/* 질문당 소요시간 */}
-            <div
-              style={{
-                background: "#fff",
-                padding: "1.5rem",
-                borderRadius: "8px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  marginBottom: "1rem",
-                }}
-              >
-                <span style={{ fontSize: "1rem", fontWeight: "bold" }}>
-                  질문당 소요시간
-                </span>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  gap: "1rem",
-                  fontSize: "0.8rem",
-                  color: "#666",
-                }}
-              >
-                <div>
-                  <div>최소</div>
-                  <div>0ms</div>
-                </div>
-                <div>
-                  <div>최대</div>
-                  <div>0ms</div>
-                </div>
-                <div>
-                  <div>평균</div>
-                  <div>0ms</div>
-                </div>
-              </div>
-            </div>
-
-            {/* 선택지 변경 횟수 */}
-            <div
-              style={{
-                background: "#fff",
-                padding: "1.5rem",
-                borderRadius: "8px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  marginBottom: "1rem",
-                }}
-              >
-                <span
+                <div
                   style={{
-                    fontSize: "1rem",
-                    fontWeight: "bold",
-                    color: "#000000",
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: "1rem",
                   }}
                 >
-                  평균 선택지 변경 횟수
-                </span>
+                  <span style={{ fontSize: "1rem", fontWeight: "bold" }}>
+                    마우스 정지시간
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "1rem",
+                    fontSize: "0.8rem",
+                    color: "#666",
+                  }}
+                >
+                  <div>
+                    <div>최소</div>
+                    <div>{idleStats?.minDuration || 0}ms</div>
+                  </div>
+                  <div>
+                    <div>최대</div>
+                    <div>{idleStats?.maxDuration || 0}ms</div>
+                  </div>
+                  <div>
+                    <div>평균</div>
+                    <div>{idleStats?.avgDuration?.toFixed(0) || 0}ms</div>
+                  </div>
+                </div>
               </div>
+
+              {/* 질문당 소요시간 */}
               <div
                 style={{
-                  fontSize: "1.5rem",
-                  fontWeight: "bold",
-                  color: "#666",
+                  background: "#fff",
+                  padding: "1.5rem",
+                  borderRadius: "8px",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                 }}
               >
-                0회
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: "1rem",
+                  }}
+                >
+                  <span style={{ fontSize: "1rem", fontWeight: "bold" }}>
+                    질문당 소요시간
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "1rem",
+                    fontSize: "0.8rem",
+                    color: "#666",
+                  }}
+                >
+                  <div>
+                    <div>최소</div>
+                    <div>{questionTimeStats?.min?.value || 0}ms</div>
+                  </div>
+                  <div>
+                    <div>최대</div>
+                    <div>{questionTimeStats?.max?.value || 0}ms</div>
+                  </div>
+                  <div>
+                    <div>평균</div>
+                    <div>
+                      {questionTimeStats?.average?.averageDurationMs?.toFixed(
+                        0
+                      ) || 0}
+                      ms
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 선택지 변경 횟수 */}
+              <div
+                style={{
+                  background: "#fff",
+                  padding: "1.5rem",
+                  borderRadius: "8px",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: "1rem",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "1rem",
+                      fontWeight: "bold",
+                      color: "#000000",
+                    }}
+                  >
+                    평균 선택지 변경 횟수
+                  </span>
+                </div>
+                <div
+                  style={{
+                    fontSize: "1.5rem",
+                    fontWeight: "bold",
+                    color: "#666",
+                  }}
+                >
+                  {selectionChange?.avgChangeCount?.toFixed(1) || "0"}회
+                </div>
               </div>
             </div>
           </div>

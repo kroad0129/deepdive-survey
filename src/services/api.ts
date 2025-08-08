@@ -30,6 +30,69 @@ export interface ChoiceCountResponse {
   count: number;
 }
 
+// 새로운 통계 관련 인터페이스들
+export interface ClickPerParticipantDto {
+  questionId: number;
+  clickCount: number;
+  participantCount: number;
+  clickPerParticipant: number;
+}
+
+export interface ClickPerOptionDto {
+  optionId: string;
+  clickCount: number;
+  participantCount: number;
+  clickPerParticipant: number;
+}
+
+export interface ClickStatsResponse {
+  questionId: number;
+  optionStats: ClickPerOptionDto[];
+}
+
+export interface SelectionChangeResponse {
+  questionId: number;
+  avgChangeCount: number;
+}
+
+export interface AverageDurationQuestionResponse {
+  questionId: number;
+  averageDurationMs: number;
+}
+
+export interface DurationQuestionResponse {
+  questionId: number;
+  value: number;
+}
+
+export interface IdlePeriodStatsDto {
+  questionId: number;
+  count: number;
+  minDuration: number;
+  maxDuration: number;
+  avgDuration: number;
+  trimmedAverageDuration: number;
+}
+
+export interface OptionHoverStats {
+  optionId: string;
+  min: number;
+  max: number;
+  average: number;
+  trimmedAverage: number;
+}
+
+export interface HoverStatsDto {
+  questionId: number;
+  optionStats: OptionHoverStats[];
+}
+
+export interface SankeyLinkDto {
+  from: string;
+  to: string;
+  size: number;
+}
+
 class ApiService {
   private async request<T>(
     endpoint: string,
@@ -155,6 +218,81 @@ class ApiService {
   // 특정 질문의 이벤트 로그 조회 API
   async getEventLogsByQuestion(questionId: string): Promise<any> {
     return this.request(`/api/event-logs/question/${questionId}`, {
+      method: "GET",
+    });
+  }
+
+  // 참여자당 클릭 수 조회 API
+  async getClickPerParticipant(
+    questionId: string
+  ): Promise<ClickPerParticipantDto> {
+    return this.request(`/api/statistic/click-per-participant/${questionId}`, {
+      method: "GET",
+    });
+  }
+
+  // 선택지별 클릭 통계 조회 API
+  async getClickPerOptionStats(
+    questionId: string
+  ): Promise<ClickStatsResponse> {
+    return this.request(`/api/statistic/click-per-option/${questionId}`, {
+      method: "GET",
+    });
+  }
+
+  // 선택지 변경 횟수 조회 API
+  async getSelectionChange(
+    questionId: string
+  ): Promise<SelectionChangeResponse> {
+    return this.request(`/api/statistic/selection-change/${questionId}`, {
+      method: "GET",
+    });
+  }
+
+  // 질문당 평균 소요시간 조회 API
+  async getAverageTimeForQuestion(
+    questionId: string
+  ): Promise<AverageDurationQuestionResponse> {
+    return this.request(`/api/statistic/question/${questionId}`, {
+      method: "GET",
+    });
+  }
+
+  // 질문당 최소 소요시간 조회 API
+  async getMinTimeForQuestion(
+    questionId: string
+  ): Promise<DurationQuestionResponse> {
+    return this.request(`/api/statistic/question/min/${questionId}`, {
+      method: "GET",
+    });
+  }
+
+  // 질문당 최대 소요시간 조회 API
+  async getMaxTimeForQuestion(
+    questionId: string
+  ): Promise<DurationQuestionResponse> {
+    return this.request(`/api/statistic/question/max/${questionId}`, {
+      method: "GET",
+    });
+  }
+
+  // 정지 시간 통계 조회 API
+  async getIdleStats(questionId: string): Promise<IdlePeriodStatsDto> {
+    return this.request(`/api/statistic/idle-period/${questionId}`, {
+      method: "GET",
+    });
+  }
+
+  // 호버 통계 조회 API
+  async getHoverStats(questionId: string): Promise<HoverStatsDto> {
+    return this.request(`/api/statistic/hover-stats/${questionId}`, {
+      method: "GET",
+    });
+  }
+
+  // Sankey 차트 데이터 조회 API
+  async getSankeyData(questionId: string): Promise<SankeyLinkDto[]> {
+    return this.request(`/api/sankey/question/${questionId}`, {
       method: "GET",
     });
   }
