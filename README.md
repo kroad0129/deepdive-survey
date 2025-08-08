@@ -1,5 +1,7 @@
 # 설문조사 애플리케이션
 
+https://github.com/kroad0129/deepdive-survey-be
+
 React + TypeScript + Vite로 구축된 설문조사 웹 애플리케이션입니다.
 
 ## 기능
